@@ -8,22 +8,28 @@ function Dashboard({ token }) {
   const [newTask, setNewTask] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [total, setTotal] = useState(0);
 
   useEffect(() => {
     fetchTasks();
-  }, [token]);
+  }, [token, page, pageSize]);
 
   const fetchTasks = async () => {
     try {
       setLoading(true);
       const response = await axios.get(`${API_BASE_URL}/tasks`, {
+        params: { page, page_size: pageSize },
         headers: { Authorization: `Bearer ${token}` },
       });
       console.log('Fetched tasks:', response);
       if(response.data && response.data.tasks) {
         setTasks(response.data.tasks);
+        setTotal(response.data.total || 0);
       } else {
         setTasks([]);
+        setTotal(0);
       }
       setError('');
     } catch (err) {
@@ -107,33 +113,54 @@ function Dashboard({ token }) {
       <div className="card">
         <h3>My Tasks</h3>
         {tasks && tasks.length > 0 ? (
-          <ul className="tasks-list">
-            {tasks.map((task) => (
-              <li key={task.id} className="task-item">
-                <div className="task-content">
-                  <input
-                    type="checkbox"
-                    className="task-checkbox"
-                    checked={task.completed || false}
-                    onChange={() => handleToggleTask(task.id, task.completed)}
-                  />
-                  <span
-                    className={`task-text ${task.completed ? 'completed' : ''}`}
-                  >
-                    {task.title}
-                  </span>
-                </div>
-                <div className="task-actions">
-                  <button
-                    className="task-btn"
-                    onClick={() => handleDeleteTask(task.id)}
-                  >
-                    Delete
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
+          <>
+            <ul className="tasks-list">
+              {tasks.map((task) => (
+                <li key={task.id} className="task-item">
+                  <div className="task-content">
+                    <input
+                      type="checkbox"
+                      className="task-checkbox"
+                      checked={task.completed || false}
+                      onChange={() => handleToggleTask(task.id, task.completed)}
+                    />
+                    <span
+                      className={`task-text ${task.completed ? 'completed' : ''}`}
+                    >
+                      {task.title}
+                    </span>
+                  </div>
+                  <div className="task-actions">
+                    <button
+                      className="task-btn"
+                      onClick={() => handleDeleteTask(task.id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <div className="pagination">
+              <button
+                className="btn"
+                onClick={() => setPage(page - 1)}
+                disabled={page === 1}
+              >
+                ← Previous
+              </button>
+              <span className="pagination-info">
+                Page {page} of {Math.ceil(total / pageSize)} ({total} total tasks)
+              </span>
+              <button
+                className="btn"
+                onClick={() => setPage(page + 1)}
+                disabled={page >= Math.ceil(total / pageSize)}
+              >
+                Next →
+              </button>
+            </div>
+          </>
         ) : (
           <div className="empty-state">
             <p>No tasks yet. Create one to get started!</p>

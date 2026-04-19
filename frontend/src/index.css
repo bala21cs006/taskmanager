@@ -266,3 +266,27 @@ nav h1 {
   padding: 20px;
   color: #666;
 }
+
+/* ── PAGINATION ── */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.pagination-info {
+  font-size: 0.9rem;
+  color: #666;
+  min-width: 180px;
+  text-align: center;
+}
+
+.pagination .btn {
+  width: auto;
+  padding: 8px 14px;
+  font-size: 0.9rem;
+}
