@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Task Manager</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #f0f2f5;
+      min-height: 100vh;
+      color: #333;
+    }
+
+    /* ── NAV ── */
+    nav {
+      background: #2563eb;
+      color: #fff;
+      padding: 14px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    nav h1 { font-size: 1.2rem; }
+    #userInfo { font-size: 0.9rem; }
+    #logoutBtn {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: #fff;
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-left: 12px;
+    }
+    #logoutBtn:hover { background: rgba(255,255,255,0.35); }
+
+    /* ── PAGES ── */
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* ── AUTH FORMS ── */
+    .auth-wrap {
+      max-width: 400px;
+      margin: 60px auto;
+      background: #fff;
+      border-radius: 12px;
+      padding: 36px;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+    }
+    .auth-wrap h2 { margin-bottom: 24px; font-size: 1.4rem; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; margin-bottom: 6px; font-size: 0.85rem; font-weight: 600; color: #555; }
+    .form-group input {
+      width: 100%; padding: 10px 14px;
+      border: 1px solid #ddd; border-radius: 8px;
+      font-size: 0.95rem; outline: none;
+      transition: border 0.2s;
+    }
+    .form-group input:focus { border-color: #2563eb; }
+    .btn {
+      width: 100%; padding: 11px;
+      background: #2563eb; color: #fff;
+      border: none; border-radius: 8px;
+      font-size: 1rem; cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn:hover { background: #1d4ed8; }
+    .switch-link { text-align: center; margin-top: 16px; font-size: 0.9rem; color: #666; }
+    .switch-link a { color: #2563eb; cursor: pointer; text-decoration: underline; }
+    .msg { padding: 10px 14px; border-radius: 8px; margin-bottom: 14px; font-size: 0.9rem; display: none; }
+    .msg.error { background: #fee2e2; color: #b91c1c; display: block; }
+    .msg.success { background: #dcfce7; color: #15803d; display: block; }
+
+    /* ── DASHBOARD ── */
+    .dashboard {
+      max-width: 780px;
+      margin: 36px auto;
+      padding: 0 16px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 8px rgba(0,0,0,0.07);
+    }
+    .card h3 { margin-bottom: 16px; font-size: 1rem; color: #444; }
+
+    /* Create task */
+    .create-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .create-row input[type="text"] {
+      flex: 1; min-width: 140px;
+      padding: 10px 14px; border: 1px solid #ddd;
+      border-radius: 8px; font-size: 0.95rem; outline: none;
+    }
+    .create-row input:focus { border-color: #2563eb; }
+    .create-row .btn { width: auto; padding: 10px 20px; }
+
+    /* Filters */
+    .filters { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+    .filter-btn {
+      padding: 6px 16px; border: 1px solid #ddd;
+      border-radius: 20px; background: #fff;
+      cursor: pointer; font-size: 0.85rem;
+      transition: all 0.15s;
+    }
+    .filter-btn.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+
+    /* Task list */
+    #taskList { list-style: none; }
+    #taskList li {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 0; border-bottom: 1px solid #f0f0f0;
+    }
+    #taskList li:last-child { border-bottom: none; }
+    .task-check {
+      width: 20px; height: 20px; cursor: pointer;
+      accent-color: #2563eb; flex-shrink: 0;
+    }
+    .task-body { flex: 1; }
+    .task-title { font-size: 0.95rem; }
+    .task-title.done { text-decoration: line-through; color: #aaa; }
+    .task-desc { font-size: 0.78rem; color: #888; margin-top: 2px; }
+    .task-date { font-size: 0.75rem; color: #bbb; margin-top: 2px; }
+    .del-btn {
+      background: none; border: none; color: #f87171;
+      cursor: pointer; font-size: 1.1rem; flex-shrink: 0;
+      padding: 4px 8px; border-radius: 6px;
+    }
+    .del-btn:hover { background: #fee2e2; }
+
+    /* Pagination */
+    .pagination { display: flex; gap: 8px; margin-top: 16px; justify-content: center; }
+    .page-btn {
+      padding: 6px 14px; border: 1px solid #ddd;
+      border-radius: 6px; background: #fff;
+      cursor: pointer; font-size: 0.85rem;
+    }
+    .page-btn.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+    .page-btn:disabled { opacity: 0.4; cursor: default; }
+
+    .empty { text-align: center; padding: 32px; color: #aaa; font-size: 0.9rem; }
+    .spinner { text-align: center; padding: 24px; color: #aaa; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <h1>📋 Task Manager</h1>
+  <div id="userInfo" style="display:none">
+    <span id="navUsername"></span>
+    <button id="logoutBtn">Logout</button>
+  </div>
+</nav>
+
+<!-- ── LOGIN PAGE ── -->
+<div id="loginPage" class="page active">
+  <div class="auth-wrap">
+    <h2>Welcome back 👋</h2>
+    <div id="loginMsg" class="msg"></div>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="text" id="loginUsername" placeholder="Enter email"/>
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="loginPassword" placeholder="Enter password"/>
+    </div>
+    <button class="btn" onclick="doLogin()">Login</button>
+    <div class="switch-link">Don't have an account? <a onclick="showPage('registerPage')">Register</a></div>
+  </div>
+</div>
+
+<!-- ── REGISTER PAGE ── -->
+<div id="registerPage" class="page">
+  <div class="auth-wrap">
+    <h2>Create account</h2>
+    <div id="registerMsg" class="msg"></div>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" id="regEmail" placeholder="your@email.com"/>
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="regPassword" placeholder="Create password"/>
+    </div>
+    <button class="btn" onclick="doRegister()">Register</button>
+    <div class="switch-link">Already have an account? <a onclick="showPage('loginPage')">Login</a></div>
+  </div>
+</div>
+
+<!-- ── DASHBOARD ── -->
+<div id="dashboardPage" class="page">
+  <div class="dashboard">
+    <!-- Create task -->
+    <div class="card">
+      <h3>➕ New Task</h3>
+      <div class="create-row">
+        <input type="text" id="taskTitle" placeholder="Task title…"/>
+        <input type="text" id="taskDesc" placeholder="Description (optional)"/>
+        <button class="btn" onclick="createTask()">Add</button>
+      </div>
+      <div id="createMsg" class="msg" style="margin-top:10px"></div>
+    </div>
+
+    <!-- Task list -->
+    <div class="card">
+      <h3>📝 My Tasks</h3>
+      <div class="filters">
+        <button class="filter-btn active" onclick="setFilter(null, this)">All</button>
+        <button class="filter-btn" onclick="setFilter(false, this)">Pending</button>
+        <button class="filter-btn" onclick="setFilter(true, this)">Completed</button>
+      </div>
+      <div id="taskListWrap">
+        <div class="spinner">Loading…</div>
+      </div>
+      <div class="pagination" id="pagination"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── Config ──────────────────────────────────────────────────
+  const API = window.location.origin;   // same origin
+  let token = localStorage.getItem("token") || null;
+  let currentUser = localStorage.getItem("email") || null;
+  let filterCompleted = null;
+  let currentPage = 1;
+  const PAGE_SIZE = 10;
+
+  // ── Init ────────────────────────────────────────────────────
+  window.onload = () => {
+    if (token) { enterDashboard(); } else { showPage("loginPage"); }
+  };
+
+  // ── Page navigation ──────────────────────────────────────────
+  function showPage(id) {
+    document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
+  }
+
+  function enterDashboard() {
+    showPage("dashboardPage");
+    document.getElementById("userInfo").style.display = "flex";
+    document.getElementById("navUsername").textContent = `Hi, ${currentUser} 👤`;
+    loadTasks();
+  }
+
+  // ── Auth ────────────────────────────────────────────────────
+  async function doRegister() {
+    const email = v("regEmail"), password = v("regPassword");
+    if (!email || !password) return showMsg("registerMsg", "All fields required", "error");
+    const res = await api("POST", "/register", { email, password });
+    if (res.ok) {
+      showMsg("registerMsg", "Registered! Please login.", "success");
+      setTimeout(() => showPage("loginPage"), 1000);
+    } else {
+      showMsg("registerMsg", res.data.detail || "Registration failed", "error");
+    }
+  }
+
+  async function doLogin() {
+    const email = v("loginUsername"), password = v("loginPassword");
+    if (!email || !password) return showMsg("loginMsg", "Enter credentials", "error");
+    const res = await api("POST", "/login", { email, password });
+    if (res.ok) {
+      token = res.data.access_token;
+      currentUser = email;
+      localStorage.setItem("token", token);
+      localStorage.setItem("email", email);
+      enterDashboard();
+    } else {
+      showMsg("loginMsg", res.data.detail || "Login failed", "error");
+    }
+  }
+
+  document.getElementById("logoutBtn").onclick = () => {
+    token = null; currentUser = null;
+    localStorage.removeItem("token"); localStorage.removeItem("username");
+    document.getElementById("userInfo").style.display = "none";
+    showPage("loginPage");
+  };
+
+  // ── Tasks ────────────────────────────────────────────────────
+  async function loadTasks(page = 1) {
+    currentPage = page;
+    document.getElementById("taskListWrap").innerHTML = '<div class="spinner">Loading…</div>';
+    let url = `/tasks?page=${page}&page_size=${PAGE_SIZE}`;
+    if (filterCompleted !== null) url += `&completed=${filterCompleted}`;
+    const res = await api("GET", url);
+    if (!res.ok) return;
+    renderTasks(res.data);
+  }
+
+  function renderTasks({ tasks, total, page, page_size }) {
+    const wrap = document.getElementById("taskListWrap");
+    if (!tasks.length) { wrap.innerHTML = '<div class="empty">No tasks found 🎉</div>'; renderPagination(0, page, page_size); return; }
+
+    const ul = document.createElement("ul");
+    ul.id = "taskList";
+    tasks.forEach(t => {
+      const li = document.createElement("li");
+      li.innerHTML = `
+        <input type="checkbox" class="task-check" ${t.completed ? "checked" : ""}
+               onchange="toggleTask(${t.id}, this.checked)" title="Mark complete"/>
+        <div class="task-body">
+          <div class="task-title ${t.completed ? 'done' : ''}">${esc(t.title)}</div>
+          ${t.description ? `<div class="task-desc">${esc(t.description)}</div>` : ""}
+          <div class="task-date">${new Date(t.created_at).toLocaleString()}</div>
+        </div>
+        <button class="del-btn" onclick="deleteTask(${t.id})" title="Delete">🗑</button>
+      `;
+      ul.appendChild(li);
+    });
+    wrap.innerHTML = "";
+    wrap.appendChild(ul);
+    renderPagination(total, page, page_size);
+  }
+
+  function renderPagination(total, page, page_size) {
+    const totalPages = Math.ceil(total / page_size) || 1;
+    const pg = document.getElementById("pagination");
+    pg.innerHTML = "";
+    for (let i = 1; i <= totalPages; i++) {
+      const b = document.createElement("button");
+      b.className = "page-btn" + (i === page ? " active" : "");
+      b.textContent = i;
+      b.onclick = () => loadTasks(i);
+      pg.appendChild(b);
+    }
+  }
+
+  async function createTask() {
+    const title = v("taskTitle");
+    if (!title) return showMsg("createMsg", "Title is required", "error");
+    const description = v("taskDesc") || undefined;
+    const res = await api("POST", "/tasks", { title, description });
+    if (res.ok) {
+      document.getElementById("taskTitle").value = "";
+      document.getElementById("taskDesc").value = "";
+      showMsg("createMsg", "Task created!", "success");
+      setTimeout(() => hideMsg("createMsg"), 1500);
+      loadTasks(currentPage);
+    } else {
+      showMsg("createMsg", res.data.detail || "Failed to create task", "error");
+    }
+  }
+
+  async function toggleTask(id, completed) {
+    await api("PUT", `/tasks/${id}`, { completed });
+    loadTasks(currentPage);
+  }
+
+  async function deleteTask(id) {
+    if (!confirm("Delete this task?")) return;
+    await api("DELETE", `/tasks/${id}`);
+    loadTasks(currentPage);
+  }
+
+  function setFilter(val, btn) {
+    filterCompleted = val;
+    document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    loadTasks(1);
+  }
+
+  // ── Helpers ──────────────────────────────────────────────────
+  async function api(method, path, body) {
+    const opts = {
+      method,
+      headers: { "Content-Type": "application/json" },
+    };
+    if (token) opts.headers["Authorization"] = `Bearer ${token}`;
+    if (body && method !== "DELETE") opts.body = JSON.stringify(body);
+    try {
+      const r = await fetch(API + path, opts);
+      let data = {};
+      if (r.status !== 204) { try { data = await r.json(); } catch {} }
+      return { ok: r.ok, status: r.status, data };
+    } catch (e) {
+      return { ok: false, data: { detail: "Network error" } };
+    }
+  }
+
+  function v(id) { return document.getElementById(id).value.trim(); }
+  function esc(s) { return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+  function showMsg(id, text, type) {
+    const el = document.getElementById(id);
+    el.textContent = text; el.className = `msg ${type}`;
+  }
+  function hideMsg(id) { document.getElementById(id).className = "msg"; }
+</script>
+</body>
+</html>
